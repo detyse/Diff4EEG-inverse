@@ -1,0 +1,1 @@
+# Diffusion model for EEG inverse problem solving
