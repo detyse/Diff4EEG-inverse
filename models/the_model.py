@@ -8,7 +8,7 @@ import yaml
 import tqdm
 import random
 
-from the_net import BSSnet
+from _BSS_hijack.models.the_net import BSSnet
 
 class BSS(nn.Module):
     # use score function
