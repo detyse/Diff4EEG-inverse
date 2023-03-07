@@ -19,7 +19,7 @@ class BSS(nn.Module):
         self.scheduler = SDEdit_sch()   # setup 实例
         self.score_net = BSSnet(nscheduler=self.scheduler)     # a score net
         self.sampler = Analytic_DPM(scheduler=self.scheduler,
-         num_tokens=256, in_chn=3, mode='diag', measure='diag-lin', bidirectional=True).to(self.device)
+        num_tokens=256, in_chn=3, mode='diag', measure='diag-lin', bidirectional=True).to(self.device)
         
         # self.BSSer = BSSer()
 
@@ -113,8 +113,6 @@ class BSS(nn.Module):
 
     def forward(self, data):
         return self.cal_loss(data)
-
-  
 
 
 # scheduler (forward alpha and beta setting)

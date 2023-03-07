@@ -1,0 +1,12 @@
+data:
+    dataset:
+
+model:
+    type:
+
+diffusion:
+    type:
+
+sampling:
+    batch_size:
+    
