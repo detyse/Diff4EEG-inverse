@@ -8,88 +8,9 @@ import yaml
 import tqdm
 import random
 
-from _BSS_hijack.models.the_net import SSSD
+from _BSS_hijack.models.SSSD import SSSD
 
 
-# scheduler (forward alpha and beta setting)
-# p(x_t|x_s) => x_t = sqrt{alpha_t|s} * x_t + beta_t|s * epsilon
-# p(x_t|x_0) => x_t = sqrt{_alpha_t} * x + _beta_t * epsilon
-class SDEdit_sch():
-    '''
-    alpha and beta come from:   maybe
-    Maximum Likelihood Training of Score-Based Diffusion Models
-    '''
-    def __init__(self, beta_min=0.1, beta_max=20) -> None:
-        self.beta_min = beta_min
-        self.beta_max = beta_max
-
-    def ALPHA(self, t):
-        # actually mean _alpha_t
-        if isinstance(t, torch.Tensor):
-            return torch.exp(-(self.beta_max - self.beta_min) * t**2 / 2 - t * self.beta_min)
-        else:
-            return np.exp(-(self.beta_max - self.beta_min) * t**2 / 2 - t * self.beta_min)
-
-    def BETA(self, t):
-        # _beta_t
-        return 1 - self.ALPHA(t)
-    
-    def _beta(self, t):
-        return self.beta_min + (self.beta_max - self.beta_min) * t
-
-    def G(self, t):
-        if isinstance(t, torch.Tensor):
-            return torch.sqrt(self._beta(t))
-        else:
-            return np.sqrt(self._beta(t)) 
-    
-    def F(self, t):
-        return - self._beta(t) / 2
-    
-    def disturb(self, x, t, z=None):
-        # z = None ? 
-        if isinstance(t, torch.Tensor):
-            scale = self.ALPHA(t).sqrt()
-            sigma = self.BETA(t).sqrt()
-        else:
-            scale = np.sqrt(self.ALPHA(t))
-            sigma = np.sqrt(self.BETA(t))
-        xt = scale * x
-        z = torch.randn_like(x) if z == None else z
-        xt += sigma * z
-        return xt
-
-
-# sampler
-# the backward 
-# p(x_t-1|x_t) => x_t-1 = MU(x_t) + SIGMA * epsilon
-# in continuous form
-# seems not work in the BSS problem
-class Analytic_DPM():
-    '''
-    
-    '''
-    def __init__(self, scheduler):
-        self.sch = scheduler
-        # self.GAMMA = GAMMA
-        # self.score = score_model
-
-    def ALPHA_ts(self, t, s):
-        return self.sch.ALPHA(t) / self.sch.ALPHA(s)
-
-    def BETA_ts(self, t, s):
-        return self.sch.BETA(t) - self.ALPHA_ts(t, s) * self.sch.BETA(s)
-
-    def MU(self, score_net, x, t, s):
-        dividend = self.ALPHA_ts(t, s)
-        factor = 1 / torch.sqrt(dividend) if isinstance(dividend, torch.Tensor) else 1 / np.sqrt(dividend)
-        grad = self.BETA_ts(t, s) * score_net(x, t)
-        return factor * (x + grad)
-    
-    def SIGMA(self, GAMMA, t, s):
-        factor = self.BETA_ts(t, s) / self.ALPHA_ts(t, s)
-        return factor * (1 - self.BETA_ts(t, s) * GAMMA)
-    
 
 class BSS(nn.Module):
     # use score function
@@ -98,13 +19,14 @@ class BSS(nn.Module):
         super().__init__()
         self.args = args
         self.config = config
-        
         self.device = device
         # setup 非参化
         self.scheduler = SDEdit_sch()   # setup 实例
-        self.score_net = SSSD(nscheduler=self.scheduler)     # a score net
-        self.sampler = Analytic_DPM(scheduler=self.scheduler,
-        num_tokens=256, in_chn=3, mode='diag', measure='diag-lin', bidirectional=True).to(self.device)
+
+        # 
+        self.score_net = SSSD(nscheduler=self.scheduler, num_tokens=256, in_chn=3, mode='diag', measure='diag-lin', bidirectional=True).to(self.device)
+
+        self.sampler = Analytic_DPM(scheduler=self.scheduler)
 
         self.time_steps = 500
         # actually K steps, short sample
@@ -196,3 +118,86 @@ class BSS(nn.Module):
 
     def forward(self, data):
         return self.cal_loss(data)
+    
+
+
+# scheduler (forward alpha and beta setting)
+# p(x_t|x_s) => x_t = sqrt{alpha_t|s} * x_t + beta_t|s * epsilon
+# p(x_t|x_0) => x_t = sqrt{_alpha_t} * x + _beta_t * epsilon
+class SDEdit_sch():
+    '''
+    alpha and beta come from:   maybe
+    Maximum Likelihood Training of Score-Based Diffusion Models
+    '''
+    def __init__(self, beta_min=0.1, beta_max=20) -> None:
+        self.beta_min = beta_min
+        self.beta_max = beta_max
+
+    def ALPHA(self, t):
+        # actually mean _alpha_t
+        if isinstance(t, torch.Tensor):
+            return torch.exp(-(self.beta_max - self.beta_min) * t**2 / 2 - t * self.beta_min)
+        else:
+            return np.exp(-(self.beta_max - self.beta_min) * t**2 / 2 - t * self.beta_min)
+
+    def BETA(self, t):
+        # _beta_t
+        return 1 - self.ALPHA(t)
+    
+    def _beta(self, t):
+        return self.beta_min + (self.beta_max - self.beta_min) * t
+
+    def G(self, t):
+        if isinstance(t, torch.Tensor):
+            return torch.sqrt(self._beta(t))
+        else:
+            return np.sqrt(self._beta(t)) 
+    
+    def F(self, t):
+        return - self._beta(t) / 2
+    
+    def disturb(self, x, t, z=None):
+        # z = None ? 
+        if isinstance(t, torch.Tensor):
+            scale = self.ALPHA(t).sqrt()
+            sigma = self.BETA(t).sqrt()
+        else:
+            scale = np.sqrt(self.ALPHA(t))
+            sigma = np.sqrt(self.BETA(t))
+        xt = scale * x
+        z = torch.randn_like(x) if z == None else z
+        xt += sigma * z
+        return xt
+
+
+# sampler
+# the backward 
+# p(x_t-1|x_t) => x_t-1 = MU(x_t) + SIGMA * epsilon
+# in continuous form
+# seems not work in the BSS problem
+class Analytic_DPM():
+    '''
+    
+    '''
+    def __init__(self, scheduler):
+        self.sch = scheduler
+        # self.GAMMA = GAMMA
+        # self.score = score_model
+
+    def ALPHA_ts(self, t, s):
+        return self.sch.ALPHA(t) / self.sch.ALPHA(s)
+
+    def BETA_ts(self, t, s):
+        return self.sch.BETA(t) - self.ALPHA_ts(t, s) * self.sch.BETA(s)
+
+    def MU(self, score_net, x, t, s):
+        dividend = self.ALPHA_ts(t, s)
+        factor = 1 / torch.sqrt(dividend) if isinstance(dividend, torch.Tensor) else 1 / np.sqrt(dividend)
+        grad = self.BETA_ts(t, s) * score_net(x, t)
+        return factor * (x + grad)
+    
+    def SIGMA(self, GAMMA, t, s):
+        factor = self.BETA_ts(t, s) / self.ALPHA_ts(t, s)
+        return factor * (1 - self.BETA_ts(t, s) * GAMMA)
+    
+

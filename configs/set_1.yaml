@@ -1,18 +1,21 @@
-data:
-    dataset:
+# data:
+#     dataset:
 
-model:
-    type:
+# s4:
 
-net:
-    in_chn:
-    num_tokens:
-    depth:
+
+# net:
+    in_chn: 1
+    num_tokens: 1
+    depth: 1
     # default parameters
     dropout: 0
     embedding_dim: 128
     transpose: True
 
-sampling:
-    batch_size:
+# model:
+#     type:
+
+# sampling:
+#     batch_size:
     

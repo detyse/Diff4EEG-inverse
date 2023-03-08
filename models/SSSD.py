@@ -74,12 +74,10 @@ class SSSD(nn.Module):
     '''
     ref: Diffusion-based Time Series Imputation and Forecasting with Structured State Space Models
     SSSD net without conditional embedding
-
-    把dimension放在最后一维
     '''
     # def __init__(self, nscheduler, in_chn, num_tokens, depth, dropout=0, embedding_dim=128, transposed=False, **kwargs):
 
-    def __init__(self, nscheduler, config) -> None:
+    def __init__(self, nscheduler, config, **kwargs) -> None:
         super().__init__()
         self.config = config
         self.nscheduler = nscheduler
