@@ -1,2 +1,5 @@
 data
 _structure.md
+__pycache__
+_test.ipynb
+checkpoints

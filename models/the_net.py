@@ -70,10 +70,26 @@ class ResidualBlock(nn.Module):
         return (x + residual) / math.sqrt(2.0), skip
 
 
-class BSSnet(nn.Module):
+class SSSD(nn.Module):
+    '''
+    ref: Diffusion-based Time Series Imputation and Forecasting with Structured State Space Models
+    SSSD net without conditional embedding
 
-    def __init__(self, nscheduler, in_chn, num_tokens, depth, dropout=0, embedding_dim=128, transposed=False, **kwargs):
+    把dimension放在最后一维
+    '''
+    # def __init__(self, nscheduler, in_chn, num_tokens, depth, dropout=0, embedding_dim=128, transposed=False, **kwargs):
+
+    def __init__(self, nscheduler, config) -> None:
         super().__init__()
+        self.config = config
+        self.nscheduler = nscheduler
+        in_chn = config.net.in_chn
+        num_tokens = config.net.num_tokens
+        depth = config.depth
+        dropout = config.dropout
+        embedding_dim = config.embedding_dim
+        self.transpose = config.transpose
+
         self.diffusion_embedding = nn.Sequential(
             GaussianFourierProjection(embed_dim=embedding_dim),
             nn.Linear(embedding_dim, embedding_dim),
@@ -94,7 +110,6 @@ class BSSnet(nn.Module):
         )
 
         self.nscheduler = nscheduler
-        self.transposed = transposed
 
     def forward(self, x, t):
         # x(B, L, K) -> (transposed == False), (B, K, L) -> (transposed == True)

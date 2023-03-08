@@ -4,8 +4,14 @@ data:
 model:
     type:
 
-diffusion:
-    type:
+net:
+    in_chn:
+    num_tokens:
+    depth:
+    # default parameters
+    dropout: 0
+    embedding_dim: 128
+    transpose: True
 
 sampling:
     batch_size:
