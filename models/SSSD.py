@@ -84,7 +84,7 @@ class SSSD(nn.Module):
         in_chn = config.net.in_chn
         num_tokens = config.net.num_tokens
         depth = config.depth
-        dropout = config.dropout
+        # dropout = config.dropout
         embedding_dim = config.embedding_dim
         self.transpose = config.transpose
 

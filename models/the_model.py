@@ -11,8 +11,7 @@ import random
 from _BSS_hijack.models.SSSD import SSSD
 
 
-
-class BSS(nn.Module):
+class BSSmodel(nn.Module):
     # use score function
     # def __init__(self, device, data_channels=3) -> None:
     def __init__(self, args, config, device) -> None:
@@ -22,13 +21,9 @@ class BSS(nn.Module):
         self.device = device
         # setup 非参化
         self.scheduler = SDEdit_sch()   # setup 实例
-
-        # 
         self.score_net = SSSD(nscheduler=self.scheduler, num_tokens=256, in_chn=3, mode='diag', measure='diag-lin', bidirectional=True).to(self.device)
-
         self.sampler = Analytic_DPM(scheduler=self.scheduler)
-
-        self.time_steps = 500
+        self.time_steps = args.timesteps
         # actually K steps, short sample
 
     def cal_loss(self, data):
@@ -52,6 +47,7 @@ class BSS(nn.Module):
             torch.sum((score * std + noise) + eps)**2, dim=(1, 2))
 
         return loss
+
 
     def sample(self, data_shape):
         eps = 1e-4  # replace 0
@@ -78,12 +74,9 @@ class BSS(nn.Module):
                 x = mean_x + sigma * torch.rand_like(x, device=self.device)
                 # traces.append(mean_x)
         return mean_x # , traces
+    
 
-    # def FAST_sample(self, data):
-    #     # **TEST** ref: Analytic_DPM
-    #     return 1
-
-    def BSS(self, perturbed_data, _lambda):
+    def hijack_sample(self, perturbed_data, _lambda):
         eps = 1e-4
         init_point = 1
         
@@ -114,6 +107,7 @@ class BSS(nn.Module):
                 
                 x = mean_x + sigma * torch.rand_like(x, device=self.device)
                 # traces.append(mean_x)
+
         return mean_x # , traces
 
     def forward(self, data):
@@ -199,5 +193,3 @@ class Analytic_DPM():
     def SIGMA(self, GAMMA, t, s):
         factor = self.BETA_ts(t, s) / self.ALPHA_ts(t, s)
         return factor * (1 - self.BETA_ts(t, s) * GAMMA)
-    
-

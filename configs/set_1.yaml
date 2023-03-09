@@ -1,10 +1,15 @@
-# data:
-#     dataset:
+data:
+    dataset:
 
-# s4:
+s4:
+    mode: 'diag'
+    measure: 'diag-lin'
+    bidirectional: True
+    d_state: 16
+    
+    transpose: True
 
-
-# net:
+net:
     in_chn: 1
     num_tokens: 1
     depth: 1
@@ -13,9 +18,11 @@
     embedding_dim: 128
     transpose: True
 
-# model:
-#     type:
+model:
+    type:
 
-# sampling:
-#     batch_size:
+sampling:
+    batch_size:
     
+path:
+    save_path: 'projects/_BSS_hijack/result'
