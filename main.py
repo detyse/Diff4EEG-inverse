@@ -47,6 +47,7 @@ def parse_args_and_config(**parser_kwargs):
 
     return args, new_config
 
+
 def dict2namespace(config):
     namespace = argparse.Namespace()
     for key, value in config.items():
@@ -57,6 +58,37 @@ def dict2namespace(config):
         setattr(namespace, key, new_value)
     return namespace
 
+
+def BSS(mode):
+    args, config = parse_args_and_config()
+    # get args and config
+    # args can change in the main, config is defined in yaml
+
+    if mode == "train":
+        a = 1
+
+    else:
+        perturbed_data, ground_truth = get_data()
+        try:
+            model = BSSmodel(args, config)
+            result = model.hijack_sample(perturbed_data)
+        except Exception:
+            logging.error()
+        
+        now = time.localtime()
+        now_time = time.strftime("%m-%d_%H:%M.npz", now)
+        
+        save_path = config.path.save_path
+        file_path = save_path + now_time
+        np.savez(file_path, result=result, ground_truth=ground_truth)
+
+    return 0
+
+
+# train
+
+
+# bss使用
 def get_data(number=10):
     dataset = perturbed_test_dataset()
     ground_truth = separated_test_dataset()
@@ -66,28 +98,6 @@ def get_data(number=10):
     pick_test_data = data[pick]
     pick_ground_truth = ground_truth_data[pick]
     return pick_test_data, pick_ground_truth
-
-def BSS():
-    args, config = parse_args_and_config()
-    # get args and config
-    # args can change in the main, config is defined in yaml
-
-    perturbed_data, ground_truth = get_data()
-
-    try:
-        model = BSSmodel(args, config)
-        result = model.hijack_sample(perturbed_data)
-    except Exception:
-        logging.error()
-    
-    now = time.localtime()
-    now_time = time.strftime("%m-%d_%H:%M.npz", now)
-    
-    save_path = config.path.save_path
-    file_path = save_path + now_time
-    np.savez(file_path, result=result, ground_truth=ground_truth)
-
-    return 0
 
 
 if __name__ == "__main__":

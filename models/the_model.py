@@ -7,8 +7,9 @@ import numpy as np
 import yaml
 import tqdm
 import random
+from utils.utils import type_align
 
-from _BSS_hijack.models.SSSD import SSSD
+from models.SSSD import SSSD
 
 
 class BSSmodel(nn.Module):
@@ -20,17 +21,23 @@ class BSSmodel(nn.Module):
         self.config = config
         self.device = device
         # setup 非参化
-        self.scheduler = SDEdit_sch()   # setup 实例
-        self.score_net = SSSD(nscheduler=self.scheduler, num_tokens=256, in_chn=3, mode='diag', measure='diag-lin', bidirectional=True).to(self.device)
-        self.sampler = Analytic_DPM(scheduler=self.scheduler)
-        self.time_steps = args.timesteps
+        self.scheduler = Score_sch()   # setup 实例
+        self.score_net = SSSD(nscheduler=self.scheduler, 
+                              num_tokens=config.net.num_tokens, 
+                              in_chn=config.net.in_chn, 
+                              mode=config.s4.mode, 
+                              measure=config.s4.measure).to(self.device)
+        self.sampler = VDM_sampler(scheduler=self.scheduler)
+        self.time_steps = args.timesteps    # 把timesteps设为args方便修改
         # actually K steps, short sample
 
     def cal_loss(self, data):
         eps = 1e-5  # may no need
+        # input perturbed data have 1 channel
+        data = type_align(data).to(self.device)
         B, C, L = data.shape
         # Batch size, Channel, Length
-        
+
         random_t = torch.rand(B, device=self.device)
         # each batch use different t
         random_t = random_t[:, None, None]
@@ -81,6 +88,7 @@ class BSSmodel(nn.Module):
         init_point = 1
         
         # triple the perturbed data
+        perturbed_data = type_align(perturbed_data).to(self.device)
         perturbed_data = perturbed_data * torch.ones([3, 1], device=self.device)
         data_shape = perturbed_data.shape
 
@@ -116,12 +124,13 @@ class BSSmodel(nn.Module):
 
 
 # scheduler (forward alpha and beta setting)
-# p(x_t|x_s) => x_t = sqrt{alpha_t|s} * x_t + beta_t|s * epsilon
-# p(x_t|x_0) => x_t = sqrt{_alpha_t} * x + _beta_t * epsilon
-class SDEdit_sch():
+# 1 >= t > s >= 0
+# p(x_t|x_s) => x_t = sqrt{alpha_t|s} * x_t + sqrt{beta_t|s} * epsilon
+# p(x_t|x_0) => x_t = sqrt{_alpha_t} * x + sqrt{_beta_t} * epsilon
+class Score_sch():
     '''
     alpha and beta come from:   maybe
-    Maximum Likelihood Training of Score-Based Diffusion Models
+    ref: Maximum Likelihood Training of Score-Based Diffusion Models
     '''
     def __init__(self, beta_min=0.1, beta_max=20) -> None:
         self.beta_min = beta_min
@@ -152,6 +161,7 @@ class SDEdit_sch():
     
     def disturb(self, x, t, z=None):
         # z = None ? 
+        # z could be Other noise that is not Gaussian
         if isinstance(t, torch.Tensor):
             scale = self.ALPHA(t).sqrt()
             sigma = self.BETA(t).sqrt()
@@ -163,17 +173,11 @@ class SDEdit_sch():
         xt += sigma * z
         return xt
 
-
 # sampler
 # the backward 
 # p(x_t-1|x_t) => x_t-1 = MU(x_t) + SIGMA * epsilon
-# in continuous form
-# seems not work in the BSS problem
-class Analytic_DPM():
-    '''
-    
-    '''
-    def __init__(self, scheduler):
+class VDM_sampler():
+    def __init__(self, scheduler) -> None:
         self.sch = scheduler
         # self.GAMMA = GAMMA
         # self.score = score_model
@@ -190,6 +194,72 @@ class Analytic_DPM():
         grad = self.BETA_ts(t, s) * score_net(x, t)
         return factor * (x + grad)
     
-    def SIGMA(self, GAMMA, t, s):
-        factor = self.BETA_ts(t, s) / self.ALPHA_ts(t, s)
-        return factor * (1 - self.BETA_ts(t, s) * GAMMA)
+    def SIGMA(self, t, s):
+        # t > s
+        sigma = self.sch.BETA(s) / self.sch.BETA(t) * self.BETA_ts(t, s)
+        return torch.sqrt(sigma) if isinstance(sigma, torch.Tensor) else np.sqrt(sigma)
+
+
+# class VariationalDMSampler():
+#     """
+#     ref:
+#     Meng, C., He, Y., Song, Y., Song, J., Wu, J., Zhu, J.-Y., & Ermon, S. (2022). 
+#     SDEDIT: GUIDED IMAGE SYNTHESIS AND EDITING WITH STOCHASTIC DIFFERENTIAL EQUATIONS. 33.
+#     P21 Algorithm 4
+#     Li, C., Zhu, J., & Zhang, B. (2022). 
+#     ANALYTIC-DPM: AN ANALYTIC ESTIMATE OF THE OPTIMAL REVERSE VARIANCE IN DIFFUSION PROB- ABILISTIC MODELS. 39.
+#     P22
+#     Diederik P Kingma, Tim Salimans, Ben Poole, and Jonathan Ho. Variational diffusion models.
+#     arXiv preprint arXiv:2107.00630, 2021.
+#     """
+
+#     def __init__(self, scheduler):
+#         self.sch = scheduler
+
+#     def ALPHA_ts(self, t, s):
+#         return self.sch.ALPHA(t) / self.sch.ALPHA(s)
+    
+#     def BETA_ts(self, t, s):
+#         return self.sch.BETA(t) - self.ALPHA_ts(t, s) * self.sch.BETA(s)
+
+#     def MU(self, score_model, x, cond_info, t, s):
+#         # t > s
+#         dividend = self.ALPHA_ts(t, s)
+#         factor = 1 / torch.sqrt(dividend) if isinstance(dividend, torch.Tensor) else 1 / np.sqrt(dividend)
+#         grad = self.BETA_ts(t, s) * score_model(x, cond_info, t)
+#         return factor * (x + grad)
+    
+#     def SIGMA(self, t, s):
+#         # t > s
+#         sigma2 = self.sch.BETA(s) / self.sch.BETA(t) * self.BETA_ts(t, s)
+#         return torch.sqrt(sigma2) if isinstance(sigma2, torch.Tensor) else np.sqrt(sigma2)
+
+# sampler
+# the backward 
+# p(x_t-1|x_t) => x_t-1 = MU(x_t) + SIGMA * epsilon
+# in continuous form
+# seems not work in the BSS problem
+# class Analytic_DPM():
+#     '''
+#     could not use in this project, which require a known diffusion path.
+#     '''
+#     def __init__(self, scheduler):
+#         self.sch = scheduler
+#         # self.GAMMA = GAMMA
+#         # self.score = score_model
+
+#     def ALPHA_ts(self, t, s):
+#         return self.sch.ALPHA(t) / self.sch.ALPHA(s)
+
+#     def BETA_ts(self, t, s):
+#         return self.sch.BETA(t) - self.ALPHA_ts(t, s) * self.sch.BETA(s)
+
+#     def MU(self, score_net, x, t, s):
+#         dividend = self.ALPHA_ts(t, s)
+#         factor = 1 / torch.sqrt(dividend) if isinstance(dividend, torch.Tensor) else 1 / np.sqrt(dividend)
+#         grad = self.BETA_ts(t, s) * score_net(x, t)
+#         return factor * (x + grad)
+    
+#     def SIGMA(self, GAMMA, t, s):
+#         factor = self.BETA_ts(t, s) / self.ALPHA_ts(t, s)
+#         return factor * (1 - self.BETA_ts(t, s) * GAMMA)

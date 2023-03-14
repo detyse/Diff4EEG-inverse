@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from _BSS_hijack.models.s4 import S4
+from models.s4 import S4
 import math
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange

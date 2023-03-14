@@ -1,28 +1,30 @@
-data:
-    dataset:
-
-s4:
-    mode: 'diag'
-    measure: 'diag-lin'
-    bidirectional: True
-    d_state: 16
-    
-    transpose: True
+model:
+    # 可将scheduler和sampler放入config
+    # type:
 
 net:
-    in_chn: 1
-    num_tokens: 1
-    depth: 1
+    in_chn: 3
+    num_tokens: 32
+    depth: 24
     # default parameters
     dropout: 0
     embedding_dim: 128
     transpose: True
 
-model:
-    type:
+s4:
+    mode: 'nplr'
+    measure: 'hippo'
+    bidirectional: True
+    # d_state: 64
+    transpose: True
+
+
+train:
+    lr: 1e-4
+    epoch: 100
+    save_path: 'projects/_BSS_hijack/result'
+
 
 sampling:
     batch_size:
     
-path:
-    save_path: 'projects/_BSS_hijack/result'

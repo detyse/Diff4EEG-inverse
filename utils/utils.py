@@ -1,9 +1,10 @@
 import numpy as np
+import yaml
 from sklearn.decomposition import PCA, FastICA
-
+import tqdm
 import torch
 from torch.utils.data import Dataset, DataLoader
-
+from torch.optim import Adam
 import numpy as np
 
 def ICA(data):  # data shape [1, 1, length]
@@ -14,9 +15,8 @@ def ICA(data):  # data shape [1, 1, length]
     return ica  # []
 
 def type_align(data):
-    # align the data type into nparray or tensor
-    # if data.isinstance()
-    return
-
-if __name__ == "__main__":
-    a = 1
+    # align the data type to torch tensor
+    if data.isinstance(torch.Tensor):
+        return data.type(torch.float32)
+    elif data.isinstance(np.array):
+        return torch.from_numpy(data).type(torch.float32)
