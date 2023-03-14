@@ -29,6 +29,7 @@ class ResidualBlock(nn.Module):
 
     def __init__(self, num_tokens, embedding_dim, **kwargs):
         super().__init__()
+    
         self.diffusion_projection = nn.Sequential(
             nn.Linear(embedding_dim, num_tokens),
             Rearrange('b c -> b c 1')
@@ -55,10 +56,13 @@ class ResidualBlock(nn.Module):
         # diffusion_emb(B, embedding_dim)
 
         diffusion_emb = self.diffusion_projection(diffusion_emb) # (B, C, 1)
+        # print('type x', type(x), '    shape x: ', x.shape)
+        # print('type emb', type(diffusion_emb), '        shape emb:', diffusion_emb.shape)
         y = x + diffusion_emb
-
+        # print('type y:', type(y), '       shape y:', y.shape)
         y = self.input_projection(y) # (B, 2C, L)
         y = self.S4_1(y) # (B, 2C, L)
+        print(type(y))
         y = self.ln1(y)
         y = self.S4_2(y) # (B, 2C, L)
         y = self.ln2(y)
@@ -83,10 +87,9 @@ class SSSD(nn.Module):
         self.nscheduler = nscheduler
         in_chn = config.net.in_chn
         num_tokens = config.net.num_tokens
-        depth = config.depth
+        depth = config.net.depth
         # dropout = config.dropout
-        embedding_dim = config.embedding_dim
-        self.transpose = config.transpose
+        embedding_dim = config.net.embedding_dim
 
         self.diffusion_embedding = nn.Sequential(
             GaussianFourierProjection(embed_dim=embedding_dim),
@@ -112,7 +115,6 @@ class SSSD(nn.Module):
     def forward(self, x, t):
         # x(B, L, K) -> (transposed == False), (B, K, L) -> (transposed == True)
         # t(B, 1, 1)
-        if not self.transposed: x = x.transpose(-1, -2)
         diffusion_emb = self.diffusion_embedding(t.view(-1)) # (B, embedding_dim)
         x = self.input_projection(x) # (B, C, L)
 
@@ -126,5 +128,4 @@ class SSSD(nn.Module):
         x = self.output_projection2(x) 
 
         x = x / torch.sqrt(self.nscheduler.BETA(t))
-        if not self.transposed: x = x.transpose(-1, -2)
         return x

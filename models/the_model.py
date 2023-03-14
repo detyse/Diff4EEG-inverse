@@ -15,16 +15,15 @@ from models.SSSD import SSSD
 class BSSmodel(nn.Module):
     # use score function
     # def __init__(self, device, data_channels=3) -> None:
-    def __init__(self, args, config, device) -> None:
+    def __init__(self, args, config) -> None:
         super().__init__()
         self.args = args
         self.config = config
-        self.device = device
+        self.device = config.device
         # setup 非参化
         self.scheduler = Score_sch()   # setup 实例
         self.score_net = SSSD(nscheduler=self.scheduler, 
-                              num_tokens=config.net.num_tokens, 
-                              in_chn=config.net.in_chn, 
+                              config=self.config, 
                               mode=config.s4.mode, 
                               measure=config.s4.measure).to(self.device)
         self.sampler = VDM_sampler(scheduler=self.scheduler)
@@ -35,6 +34,7 @@ class BSSmodel(nn.Module):
         eps = 1e-5  # may no need
         # input perturbed data have 1 channel
         data = type_align(data).to(self.device)
+        print(data.shape)
         B, C, L = data.shape
         # Batch size, Channel, Length
 

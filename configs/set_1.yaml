@@ -13,14 +13,15 @@ net:
 
 s4:
     mode: 'nplr'
-    measure: 'hippo'
+    measure: 'legs'
     bidirectional: True
     # d_state: 64
     transpose: True
 
 
 train:
-    lr: 1e-4
+    lr: 0.00001
+    batch_size: 50
     epoch: 100
     save_path: 'projects/_BSS_hijack/result'
 

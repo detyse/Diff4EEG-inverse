@@ -52,7 +52,7 @@ if __name__ == "__main__":
     args, config = parse_args_and_config()
     device = torch.device("cuda:3")
     model = BSSmodel(args, config)
-    dataloader = DataLoader(separated_dataset())
+    dataloader = DataLoader(separated_dataset(), batch_size=config.train.batch_size, shuffle=True)
     train(
         model=model,
         config=config,

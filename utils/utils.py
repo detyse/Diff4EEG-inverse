@@ -16,7 +16,7 @@ def ICA(data):  # data shape [1, 1, length]
 
 def type_align(data):
     # align the data type to torch tensor
-    if data.isinstance(torch.Tensor):
+    if isinstance(data, torch.Tensor):
         return data.type(torch.float32)
-    elif data.isinstance(np.array):
+    elif isinstance(data, np.array):
         return torch.from_numpy(data).type(torch.float32)
