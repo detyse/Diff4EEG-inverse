@@ -7,7 +7,7 @@ import yaml
 import tqdm
 from utils.train_eval import train
 from models.the_model import BSSmodel
-from torch.optim import Adam
+from torch.optim import AdamW
 from torch.utils.data import Dataset, DataLoader
 from datasets.datasets import perturbed_dataset, separated_dataset, perturbed_test_dataset, separated_test_dataset
 
@@ -18,7 +18,7 @@ def parse_args_and_config(**parser_kwargs):
     parser.add_argument('--exp', type=str, default='exp')
     parser.add_argument('--lambda', type=float, default=0.5, help='The restriction coefficient')
     parser.add_argument('--timesteps', type=int, default=500, help='Sample time steps')
-    
+    parser.add_argument()
     args = parser.parse_args()
 
     path = "configs/" + args.config
@@ -58,3 +58,5 @@ if __name__ == "__main__":
         config=config,
         train_loader=dataloader,
     )
+
+    

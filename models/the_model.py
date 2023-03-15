@@ -34,7 +34,6 @@ class BSSmodel(nn.Module):
         eps = 1e-5  # may no need
         # input perturbed data have 1 channel
         data = type_align(data).to(self.device)
-        print(data.shape)
         B, C, L = data.shape
         # Batch size, Channel, Length
 
@@ -49,9 +48,8 @@ class BSSmodel(nn.Module):
         perturbed_x = self.scheduler.disturb(data, random_t, noise)
         
         score = self.score_net(perturbed_x, random_t)
-        
         loss = torch.mean(
-            torch.sum((score * std + noise) + eps)**2, dim=(1, 2))
+            torch.sum((score * std + noise) + eps, dim=(1, 2))**2)
 
         return loss
 

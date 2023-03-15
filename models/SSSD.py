@@ -56,15 +56,11 @@ class ResidualBlock(nn.Module):
         # diffusion_emb(B, embedding_dim)
 
         diffusion_emb = self.diffusion_projection(diffusion_emb) # (B, C, 1)
-        # print('type x', type(x), '    shape x: ', x.shape)
-        # print('type emb', type(diffusion_emb), '        shape emb:', diffusion_emb.shape)
         y = x + diffusion_emb
-        # print('type y:', type(y), '       shape y:', y.shape)
         y = self.input_projection(y) # (B, 2C, L)
-        y = self.S4_1(y) # (B, 2C, L)
-        print(type(y))
+        y, _ = self.S4_1(y) # (B, 2C, L)
         y = self.ln1(y)
-        y = self.S4_2(y) # (B, 2C, L)
+        y, _ = self.S4_2(y) # (B, 2C, L)
         y = self.ln2(y)
 
         gate, filter = torch.chunk(y, 2, dim=1)
