@@ -4,7 +4,7 @@ from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from utils.utils import save_in_time
+from utils.utils import save_in_time, save_in_time_hijack, evaluate
 from models.the_model import BSSmodel
 import os
 
@@ -35,6 +35,7 @@ def train(
 
     return 0
 
+
 def sample(model,
            args,
            config,):
@@ -44,25 +45,34 @@ def sample(model,
     result = model.sample(data_shape)
     result = result.numpy()
     save_path = config.save.result_path
-    save_in_time(result, save_path, 'sample')
-    return
+    save_in_time(result, save_path, 'sample', 'datalength:', config.sample.data_shape[0])
+    return 0
+
 
 def hijack(model, 
            args,
            config,
-           data_set):
+           hijack_loader):
     ckpt = os.path.join(config.hijack.model_path, args.ckpt)
     model.load_state_dict(torch.load(ckpt))
-    data_loader =DataLoader(data_set, batch_size=config.hijack.batch_size, shuffle=True,)
-    perturbed_data = next(iter(data_loader))
-    result = model.hijack(perturbed_data, config.hijack._lambda)
-    result = result.numpy()
-    save_path = config.hijack.result_path
-    save_in_time(result, perturbed_data, save_path, 'hijack')
-    return 
 
-# hijack result evaluation
-def evaluate(result_path,
-             data_loader):
+    # perturbed_data = perturbed_dataset.data[indices]
+    # true_data = true_dataset.data[indices]
+    # indices = np.random.choice(10, perturbed_data.shape[0])
     
-    return 0
+    # there is not need to use DataLoader
+    # data_loader =DataLoader(dataset, batch_size=config.hijack.batch_size, shuffle=True,)
+    # perturbed_data = next(iter(data_loader))
+    num_items = 0
+    error = 0
+    for perturbed_data, ground_truth in hijack_loader:
+        result = model.hijack(perturbed_data, config.hijack._lambda)
+        result = result.numpy()
+        ground_truth = ground_truth.numpy()
+        save_path = config.hijack.result_path
+        save_in_time_hijack(result, ground_truth, save_path, 'hijack', 'datalength:' ,config.hijack.data_shape[0])
+        num_items += perturbed_data.shape[0]
+        error += evaluate(result, ground_truth)
+    mean_err = error / num_items
+    
+    return mean_err

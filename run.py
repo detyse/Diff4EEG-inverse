@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import argparse
 import yaml
 import tqdm
-from utils.train_eval import train
+from utils.train_eval import train, sample, hijack
 from models.the_model import BSSmodel
 from torch.optim import AdamW
 from torch.utils.data import Dataset, DataLoader
@@ -15,9 +15,8 @@ def parse_args_and_config(**parser_kwargs):
     parser = argparse.ArgumentParser(description='ddd')
     parser.add_argument('--config', type=str, default="set_1.yaml") #, required=True
     parser.add_argument('--seed', type=int, default=9574, help='Random seed')
-    parser.add_argument('--exp', type=str, default='exp')
-    parser.add_argument('--lambda', type=float, default=0.5, help='The restriction coefficient')
     parser.add_argument('--timesteps', type=int, default=500, help='Sample time steps')
+    parser.add_argument('--')
     parser.add_argument()
     args = parser.parse_args()
 
@@ -53,10 +52,11 @@ if __name__ == "__main__":
     device = torch.device("cuda:3")
     model = BSSmodel(args, config)
     dataloader = DataLoader(separated_dataset(), batch_size=config.train.batch_size, shuffle=True)
-    train(
-        model=model,
-        config=config,
-        train_loader=dataloader,
-    )
+    # train(
+    #     model=model,
+    #     config=config,
+    #     train_loader=dataloader,
+    # )
+    
 
     

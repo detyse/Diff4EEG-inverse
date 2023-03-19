@@ -31,7 +31,7 @@ def save_in_time(result, save_path, *args):
     os.makedirs(save_folder)
 
     np.save(os.path.join(save_folder, 'result.npy'), result)
-    
+
     with open(os.path.join(save_folder, 'flag.txt'), 'w') as f:
         f.write(*args)
     return 0
@@ -47,3 +47,10 @@ def save_in_time_hijack(result, ground_truth, save_path, *args):
     with open(os.path.join(save_folder, 'flag.txt'), 'w') as f:
         f.write(*args)
     return 0
+
+
+# hijack result evaluation
+def evaluate(BSS_data,
+             true_data):
+    the_bias = np.mean(np.sum((BSS_data - true_data) ** 2), dim=(1,2))
+    return the_bias
