@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 import yaml
-import tqdm
+import os
 from utils.train_eval import train, sample, hijack
 from models.the_model import BSSmodel
 from torch.optim import AdamW
@@ -52,20 +52,16 @@ if __name__ == "__main__":
     device = torch.device("cuda:3")
     model = BSSmodel(args, config)
 
-    dataloader = DataLoader(hijack_dataset(), batch_size=config.hijack.batch_size, shuffle=True)
+    try:
+        ckpt = os.path.join(config.hijack.model_path, args.ckpt)
+        model.load_state_dict(torch.load(ckpt))
+        print("model loaded")
+    except:
+        print("ckpt does not exist")
 
-    hijack(
-        model=model
+    dataloader = DataLoader(separated_dataset(), batch_size=config.train.batch_size, shuffle=True)
+    train(
+        model=model,
+        config=config,
+        train_loader=dataloader,
     )
-
-    # dataloader = DataLoader(separated_dataset(), batch_size=config.train.batch_size, shuffle=True)
-    # train(
-    #     model=model,
-    #     config=config,
-    #     train_loader=dataloader,
-    # )
-    
-    # hijack_dataloader = DataLoader(hijack_dataset, batch_size=config.hijack.batch_size)
-
-
-    

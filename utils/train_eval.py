@@ -54,13 +54,13 @@ def hijack(model,
            args,
            config,
            hijack_loader):
-    ckpt = os.path.join(config.hijack.model_path, args.ckpt)
-    model.load_state_dict(torch.load(ckpt))
-
     num_items = 0
     error = 0.
+
     for perturbed_data, ground_truth in hijack_loader:
-        result = model.hijack(perturbed_data, config.hijack._lambda)
+        
+        result = model.hijack_sample(perturbed_data, config.hijack._lambda)
+
         result = result.numpy()
         ground_truth = ground_truth.numpy()
         save_path = config.hijack.result_path

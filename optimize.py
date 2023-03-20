@@ -26,7 +26,8 @@ def get_parser():
     parser.add_argument('--config', type=str, default="set_1.yaml")
     parser.add_argument('--seed', type=int, default=9574, help='Random seed')
     parser.add_argument('--timesteps', type=int, default=500, help='Sample time steps')
-    
+    args = parser.parse_args()
+
     path = "configs/" + args.config
     with open(path, "r") as f:
         config = yaml.safe_load(f)
