@@ -40,4 +40,6 @@ hijack:
     data_shape: (10, 3, 512)
     _lambda: 0.5 # as default
 
+optim:
+    batch_size: 9
     

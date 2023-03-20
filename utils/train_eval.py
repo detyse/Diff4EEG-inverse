@@ -10,13 +10,14 @@ import os
 
 def train(
     model,
+    args,
     config,
     train_loader,
 ):
-    batch_size = config.train.batch_size
+  
     optimizer = AdamW(model.parameters(), lr=config.train.lr, weight_decay=1e-6, eps=1e-5)
     foldername = config.train.save_path
-    output_path = foldername + "/model.pth"
+    output_path = os.path.join(foldername, )
     tqdm_epoch = tqdm(range(config.train.epoch))
     for epoch_no in tqdm_epoch:
         avg_loss = 0.
@@ -56,15 +57,8 @@ def hijack(model,
     ckpt = os.path.join(config.hijack.model_path, args.ckpt)
     model.load_state_dict(torch.load(ckpt))
 
-    # perturbed_data = perturbed_dataset.data[indices]
-    # true_data = true_dataset.data[indices]
-    # indices = np.random.choice(10, perturbed_data.shape[0])
-    
-    # there is not need to use DataLoader
-    # data_loader =DataLoader(dataset, batch_size=config.hijack.batch_size, shuffle=True,)
-    # perturbed_data = next(iter(data_loader))
     num_items = 0
-    error = 0
+    error = 0.
     for perturbed_data, ground_truth in hijack_loader:
         result = model.hijack(perturbed_data, config.hijack._lambda)
         result = result.numpy()

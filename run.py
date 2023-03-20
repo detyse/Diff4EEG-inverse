@@ -9,15 +9,15 @@ from utils.train_eval import train, sample, hijack
 from models.the_model import BSSmodel
 from torch.optim import AdamW
 from torch.utils.data import Dataset, DataLoader
-from datasets.datasets import perturbed_dataset, separated_dataset, perturbed_test_dataset, separated_test_dataset
+from datasets.datasets import perturbed_dataset, separated_dataset, hijack_dataset
 
 def parse_args_and_config(**parser_kwargs):
     parser = argparse.ArgumentParser(description='ddd')
     parser.add_argument('--config', type=str, default="set_1.yaml") #, required=True
     parser.add_argument('--seed', type=int, default=9574, help='Random seed')
     parser.add_argument('--timesteps', type=int, default=500, help='Sample time steps')
-    parser.add_argument('--')
-    parser.add_argument()
+    parser.add_argument('--model_save', type=str, default="model", help='Save model name')
+    parser.add_argument('--model_path', type=str, default="model", help='Load model name')
     args = parser.parse_args()
 
     path = "configs/" + args.config
@@ -51,12 +51,21 @@ if __name__ == "__main__":
     args, config = parse_args_and_config()
     device = torch.device("cuda:3")
     model = BSSmodel(args, config)
-    dataloader = DataLoader(separated_dataset(), batch_size=config.train.batch_size, shuffle=True)
+
+    dataloader = DataLoader(hijack_dataset(), batch_size=config.hijack.batch_size, shuffle=True)
+
+    hijack(
+        model=model
+    )
+
+    # dataloader = DataLoader(separated_dataset(), batch_size=config.train.batch_size, shuffle=True)
     # train(
     #     model=model,
     #     config=config,
     #     train_loader=dataloader,
     # )
     
+    # hijack_dataloader = DataLoader(hijack_dataset, batch_size=config.hijack.batch_size)
+
 
     
