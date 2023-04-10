@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from datasets.datasets import hijack_dataset
 from utils.train_eval import hijack
 from models.the_model import BSSmodel
+from utils.utils import random_select
 
 
 def parse_args_and_config(**parser_kwargs):
@@ -15,13 +16,13 @@ def parse_args_and_config(**parser_kwargs):
     parser.add_argument('--config', type=str, default="set_1.yaml") #, required=True
     parser.add_argument('--seed', type=int, default=1234, help='Random seed')
     parser.add_argument('--timesteps', type=int, default=500, help='Sample time steps')
-    parser.add_argument('--ckpt', type=str, default='model', help="ckpt to load model")
+    parser.add_argument('--ckpt', type=str, default='model.pth', help="ckpt to load model")
     parser.add_argument('--batch_size', type=int, default=32, help='')
     args = parser.parse_args()
 
     path = "configs/" + args.config
     with open(path, "r") as f:
-        config = yaml.safe_load(f)
+        config = yaml.unsafe_load(f)
     new_config = dict2namespace(config)
     
     device = torch.device('cuda:3')
@@ -45,10 +46,12 @@ def dict2namespace(config):
         setattr(namespace, key, new_value)
     return namespace
 
+
+
 if __name__ == '__main__':
     args, config = parse_args_and_config()
-    
-    dataloader = DataLoader(hijack_dataset(), batch_size=args.batch_size, shuffle=True)
+    dataset = hijack_dataset()
+    dataloader = DataLoader(dataset=dataset, batch_size=args.batch_size, shuffle=True)
     
     model = BSSmodel(args, config)
     try:
@@ -58,4 +61,5 @@ if __name__ == '__main__':
     except:
         print("ckpt does not exist")
 
-    hijack(model=model, dataloader=dataloader, args=args, config=config)
+    _lambda = config.hijack._lambda
+    hijack(model=model, args=args, config=config, hijack_loader=dataloader, _lambda=_lambda)

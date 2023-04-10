@@ -1,15 +1,10 @@
 import numpy as np
-import yaml
 from sklearn.decomposition import PCA, FastICA
-import tqdm
 import torch
-from torch.utils.data import Dataset, DataLoader
-from torch.optim import Adam
 import numpy as np
-
 import os
-import shutil
 from datetime import datetime
+import random
 
 def ICA(data):  # data shape [1, 1, length]
     # separate into three parts
@@ -54,3 +49,57 @@ def evaluate(BSS_data,
              true_data):
     the_bias = np.mean(np.sum((BSS_data - true_data) ** 2), dim=(1,2))
     return the_bias
+
+
+def frequency_domain(signal, sample_rate):
+    import matplotlib.pyplot as plt
+
+    # Compute the power spectral density using the FFT
+    fft_result = np.fft.fft(signal)
+    power_spectrum = np.abs(fft_result)**2 / (len(signal) * sample_rate)
+
+    # Compute the corresponding frequencies
+    frequencies = np.fft.fftfreq(len(signal), d=1/sample_rate)
+
+    frequencies = frequencies[:int(len(frequencies)/2)]
+    power_spectrum = power_spectrum[:int(len(power_spectrum) / 2)]
+
+    return frequencies, power_spectrum
+    # # Plot the frequency domain
+    # plt.plot(frequencies, power_spectrum)
+    # plt.xlabel('Frequency (Hz)')
+    # plt.ylabel('Power')
+    
+    # # 有可能长度对不上
+    # plt.xlim([0, int(sample_rate/2)])
+    # plt.show()
+
+
+def random_select(search_space):
+    _lambda = random.choice(search_space)
+    return _lambda
+
+
+from sklearn.manifold import TSNE
+
+def tsne(data, n_components=2, perplexity=30.0, learning_rate=200.0, n_iter=1000):
+    """
+    使用t-SNE算法进行数据降维
+    :param data: 数据矩阵，每行为一个样本，每列为一个特征
+    :param n_components: 降维后的维度数，默认为2
+    :param perplexity: t-SNE算法的困惑度，默认为30.0
+    :param learning_rate: 学习率，默认为200.0
+    :param n_iter: 迭代次数，默认为1000
+    :return: 降维后的数据矩阵
+    """
+    tsne = TSNE(n_components=n_components, perplexity=perplexity, learning_rate=learning_rate, n_iter=n_iter)
+    result = tsne.fit_transform(data)
+    # import matplotlib.pyplot as plt
+    
+    # if plot:
+    #     plt.figure()
+    #     plt.scatter(result[:, 0], result[:, 1])
+
+    #     plt.show()
+
+    return result

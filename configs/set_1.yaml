@@ -20,24 +20,24 @@ s4:
 
 
 train:
-    lr: 0.0001
+    lr: 0.000001
     batch_size: 50
     epoch: 100
     save_path: 'checkpoints'    # relative path
 
 
-sampling:
+sample:
     model_path: 'checkpoints'
     result_path: 'result/generate'
     # batch_size: 10  # 10 is good
-    data_shape: (10, 3, 512)
+    data_shape: !!python/tuple [10, 3, 512]
 
 
 hijack:
     model_path: 'checkpoints'
     result_path: 'result/hijack'
     # batch_size: 10  # 10 is good
-    data_shape: (10, 3, 512)
+    data_shape: !!python/tuple [10, 3, 512]
     _lambda: 0.5 # as default
 
 optim:

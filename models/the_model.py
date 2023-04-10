@@ -71,7 +71,7 @@ class BSSmodel(nn.Module):
         # traces = []
         # traces.append(x)
 
-        with torch.no_gard():
+        with torch.no_grad():
             for t in tqdm.trange(K - 1):
                 time_step = torch.ones(data_shape[0], device=self.device)[:, None, None]
                 mean_x = self.sampler.MU(self.score_net, x, time_step * trajectory[t], time_step * trajectory[t+1])
@@ -87,6 +87,7 @@ class BSSmodel(nn.Module):
         
         # triple the perturbed data
         perturbed_data = type_align(perturbed_data).to(self.device)
+        perturbed_data = perturbed_data.squeeze(1)
         perturbed_data = perturbed_data * torch.ones([3, 1], device=self.device)
         data_shape = perturbed_data.shape
 
@@ -102,15 +103,15 @@ class BSSmodel(nn.Module):
         # traces = []
         # traces.append(x)
 
-        with torch.no_gard():
+        with torch.no_grad():
             for t in tqdm.trange(K - 1):
                 time_step = torch.ones(data_shape[0], device=self.device)[:, None, None]
                 mean_x = self.sampler.MU(self.score_net, x, time_step * trajectory[t], time_step * trajectory[t+1])
                 sigma = self.sampler.SIGMA(time_step * trajectory[t], time_step * trajectory[t+1])
                 
                 y_t = mean_x * perturbed_data 
-                x_prime = mean_x + (_lambda / 3) * (torch.ones([3, 1]) * y_t - torch.eye(3) * y_t)
-                
+                x_prime = mean_x + (_lambda / 3) * (torch.matmul(torch.ones([3, 1], device=self.device), y_t) - torch.matmul(torch.ones([3, 3], device=self.device), mean_x))
+                x = x_prime
                 x = mean_x + sigma * torch.rand_like(x, device=self.device)
                 # traces.append(mean_x)
 
@@ -118,7 +119,6 @@ class BSSmodel(nn.Module):
 
     def forward(self, data):
         return self.cal_loss(data)
-    
 
 
 # scheduler (forward alpha and beta setting)

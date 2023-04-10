@@ -60,7 +60,7 @@ class separated_test_dataset(Dataset):
 
 
 class hijack_dataset(Dataset):
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
         self.perturbed_path = r'/home/wyl/projects/_BSS_hijack/data/perturbed_data/perturbed_test.npy'
         self.truth_path = r'/home/wyl/projects/_BSS_hijack/data/separated_data/combined_test.npy'
@@ -69,7 +69,7 @@ class hijack_dataset(Dataset):
         self.ground_truth = np.load(self.truth_path)
 
     def __len__(self):
-        len = self.data.shape[0]
+        len = self.perturbed_data.shape[0]
         return len
     
     def __getitem__(self, index):

@@ -11,13 +11,13 @@ def get_args_and_config():
     parser = argparse.ArgumentParser(description='Sample EEG')
     parser.add_argument('--config', type=str, default='set_1.yaml', help='')
     parser.add_argument('--seed', type=int, default=3693, help='')
-    parser.add_argument('--timestep', type=int, default=500, help='')
-    parser.add_argument('--ckpt', type=str, default="model", help='')
+    parser.add_argument('--timesteps', type=int, default=500, help='')
+    parser.add_argument('--ckpt', type=str, default="model.pth", help='')
     args = parser.parse_args()
 
     path = "configs/" + args.config
     with open(path, "r") as f:
-        config = yaml.safe_load(f)
+        config = yaml.unsafe_load(f)
     new_config = dict2namespace(config)
     
     device = torch.device('cuda:3')
@@ -51,8 +51,8 @@ if __name__ == "__main__":
     try:
         ckpt = os.path.join(config.hijack.model_path, args.ckpt)
         model.load_state_dict(torch.load(ckpt))
-        print("model loaded")
+        print("::: model loaded :::")
     except:
-        print("ckpt does not exist")
+        print("::: ckpt does not exist :::")
 
     sample(model=model, args=args, config=config)

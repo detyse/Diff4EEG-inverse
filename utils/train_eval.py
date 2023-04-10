@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from utils.utils import save_in_time, save_in_time_hijack, evaluate
 from models.the_model import BSSmodel
 import os
+import functools
 
 def train(
     model,
@@ -16,8 +17,9 @@ def train(
 ):
   
     optimizer = AdamW(model.parameters(), lr=config.train.lr, weight_decay=1e-6, eps=1e-5)
+    
     foldername = config.train.save_path
-    output_path = os.path.join(foldername, )
+    output_path = os.path.join(foldername, args.model_save)
     tqdm_epoch = tqdm(range(config.train.epoch))
     for epoch_no in tqdm_epoch:
         avg_loss = 0.
@@ -44,22 +46,25 @@ def sample(model,
     model.load_state_dict(torch.load(ckpt))
     data_shape = config.sample.data_shape
     result = model.sample(data_shape)
-    result = result.numpy()
-    save_path = config.save.result_path
-    save_in_time(result, save_path, 'sample', 'datalength:', config.sample.data_shape[0])
+    result = result.cpu().numpy()
+    save_path = config.sample.result_path
+    info = 'sample' + 'datalength:' + str(config.sample.data_shape[0])
+    save_in_time(result, save_path, info)
     return 0
 
 
 def hijack(model, 
            args,
            config,
-           hijack_loader):
+           hijack_loader,
+           _lambda,
+           ):
     num_items = 0
     error = 0.
 
     for perturbed_data, ground_truth in hijack_loader:
         
-        result = model.hijack_sample(perturbed_data, config.hijack._lambda)
+        result = model.hijack_sample(perturbed_data, _lambda)
 
         result = result.numpy()
         ground_truth = ground_truth.numpy()
@@ -70,3 +75,11 @@ def hijack(model,
     mean_err = error / num_items
     
     return mean_err
+
+
+def hijack_optim(hijack_fn, _lambda, best_lambda, best_err):
+    err = hijack_fn(_lambda)
+    if err < best_err:
+        best_err = err
+        best_lambda
+    return best_lambda, best_err

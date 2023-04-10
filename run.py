@@ -16,8 +16,8 @@ def parse_args_and_config(**parser_kwargs):
     parser.add_argument('--config', type=str, default="set_1.yaml") #, required=True
     parser.add_argument('--seed', type=int, default=9574, help='Random seed')
     parser.add_argument('--timesteps', type=int, default=500, help='Sample time steps')
-    parser.add_argument('--model_save', type=str, default="model", help='Save model name')
-    parser.add_argument('--model_path', type=str, default="model", help='Load model name')
+    parser.add_argument('--model_save', type=str, default="model.pth", help='Save model name')
+    parser.add_argument('--ckpt', type=str, default="model.pth", help='Load model name')
     args = parser.parse_args()
 
     path = "configs/" + args.config
@@ -51,9 +51,12 @@ if __name__ == "__main__":
     args, config = parse_args_and_config()
     device = torch.device("cuda:3")
     model = BSSmodel(args, config)
+    ckpt = os.path.join(config.hijack.model_path, args.ckpt)
+    print(ckpt)
 
     try:
         ckpt = os.path.join(config.hijack.model_path, args.ckpt)
+        print(ckpt)
         model.load_state_dict(torch.load(ckpt))
         print("model loaded")
     except:
@@ -62,6 +65,7 @@ if __name__ == "__main__":
     dataloader = DataLoader(separated_dataset(), batch_size=config.train.batch_size, shuffle=True)
     train(
         model=model,
+        args=args,
         config=config,
         train_loader=dataloader,
     )

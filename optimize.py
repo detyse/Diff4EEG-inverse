@@ -1,4 +1,4 @@
-# hyperparameter optimize
+# hyperparameter optimize to find the best acc
 
 import torch
 import torch.nn as nn
