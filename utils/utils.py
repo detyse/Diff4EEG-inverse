@@ -47,8 +47,9 @@ def save_in_time_hijack(result, ground_truth, save_path, *args):
 # hijack result evaluation
 def evaluate(BSS_data,
              true_data):
-    the_bias = np.mean(np.sum((BSS_data - true_data) ** 2), dim=(1,2))
-    return the_bias
+    true_data = true_data.squeeze(1)
+    sum_err = np.sum((BSS_data - true_data) ** 2)
+    return sum_err
 
 
 def frequency_domain(signal, sample_rate):

@@ -14,7 +14,7 @@ from datasets.datasets import hijack_dataset
 # def hijack()
   
 def parse_args_and_config(**parser_kwargs):
-    parser = argparse.ArgumentParser(description='ddd')
+    parser = argparse.ArgumentParser(description='')
     parser.add_argument('--config', type=str, default="set_1.yaml") #, required=True
     parser.add_argument('--seed', type=int, default=1234, help='Random seed')
     parser.add_argument('--timesteps', type=int, default=500, help='Sample time steps')

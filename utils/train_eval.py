@@ -66,10 +66,12 @@ def hijack(model,
         
         result = model.hijack_sample(perturbed_data, _lambda)
 
-        result = result.numpy()
+        result = result.cpu().numpy()
         ground_truth = ground_truth.numpy()
         save_path = config.hijack.result_path
-        save_in_time_hijack(result, ground_truth, save_path, 'hijack', 'datalength:' ,config.hijack.data_shape[0])
+        info = 'hijack' + 'datalength:' +  str(config.hijack.data_shape[0])
+        save_in_time_hijack(result, ground_truth, save_path, info)
+        
         num_items += perturbed_data.shape[0]
         error += evaluate(result, ground_truth)
     mean_err = error / num_items

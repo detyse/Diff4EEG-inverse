@@ -57,9 +57,11 @@ if __name__ == '__main__':
     try:
         ckpt = os.path.join(config.hijack.model_path, args.ckpt)
         model.load_state_dict(torch.load(ckpt))
-        print("model loaded")
+        print("::: model loaded :::")
     except:
-        print("ckpt does not exist")
+        print("::: ckpt does not exist :::")
 
-    _lambda = config.hijack._lambda
-    hijack(model=model, args=args, config=config, hijack_loader=dataloader, _lambda=_lambda)
+    model.eval()
+    with torch.no_grad():
+        _lambda = config.hijack._lambda
+        hijack(model=model, args=args, config=config, hijack_loader=dataloader, _lambda=_lambda)

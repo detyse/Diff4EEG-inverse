@@ -54,5 +54,7 @@ if __name__ == "__main__":
         print("::: model loaded :::")
     except:
         print("::: ckpt does not exist :::")
-
-    sample(model=model, args=args, config=config)
+    
+    model.eval()
+    with torch.no_grad():
+        sample(model=model, args=args, config=config)

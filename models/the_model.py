@@ -30,8 +30,8 @@ class BSSmodel(nn.Module):
         self.time_steps = args.timesteps    # 把timesteps设为args方便修改
         # actually K steps, short sample
 
-    def cal_loss(self, data):
-        eps = 1e-5  # may no need
+    def cal_loss(self, data, eps = 1e-5):
+          # may no need
         # input perturbed data have 1 channel
         data = type_align(data).to(self.device)
         B, C, L = data.shape
@@ -54,8 +54,8 @@ class BSSmodel(nn.Module):
         return loss
 
 
-    def sample(self, data_shape):
-        eps = 1e-4  # replace 0
+    def sample(self, data_shape, eps = 1e-5):
+          # replace 0
 
         init_point = 1  
 
@@ -81,8 +81,8 @@ class BSSmodel(nn.Module):
         return mean_x # , traces
     
 
-    def hijack_sample(self, perturbed_data, _lambda):
-        eps = 1e-4
+    def hijack_sample(self, perturbed_data, _lambda, eps = 1e-5):
+        
         init_point = 1
         
         # triple the perturbed data
@@ -109,8 +109,9 @@ class BSSmodel(nn.Module):
                 mean_x = self.sampler.MU(self.score_net, x, time_step * trajectory[t], time_step * trajectory[t+1])
                 sigma = self.sampler.SIGMA(time_step * trajectory[t], time_step * trajectory[t+1])
                 
-                y_t = mean_x * perturbed_data 
-                x_prime = mean_x + (_lambda / 3) * (torch.matmul(torch.ones([3, 1], device=self.device), y_t) - torch.matmul(torch.ones([3, 3], device=self.device), mean_x))
+                y_t = self.scheduler.disturb(perturbed_data, time_step * trajectory[t])
+                x_prime = mean_x + (_lambda / 3) * (y_t - torch.matmul(torch.ones([3, 3], device=self.device), mean_x))
+                
                 x = x_prime
                 x = mean_x + sigma * torch.rand_like(x, device=self.device)
                 # traces.append(mean_x)
@@ -171,6 +172,10 @@ class Score_sch():
         xt += sigma * z
         return xt
 
+'''
+try other schedulers
+'''
+
 # sampler
 # the backward 
 # p(x_t-1|x_t) => x_t-1 = MU(x_t) + SIGMA * epsilon
@@ -191,7 +196,7 @@ class VDM_sampler():
         factor = 1 / torch.sqrt(dividend) if isinstance(dividend, torch.Tensor) else 1 / np.sqrt(dividend)
         grad = self.BETA_ts(t, s) * score_net(x, t)
         return factor * (x + grad)
-    
+
     def SIGMA(self, t, s):
         # t > s
         sigma = self.sch.BETA(s) / self.sch.BETA(t) * self.BETA_ts(t, s)
