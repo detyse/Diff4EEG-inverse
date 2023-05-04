@@ -10,9 +10,9 @@ from utils.train_eval import sample
 def get_args_and_config():
     parser = argparse.ArgumentParser(description='Sample EEG')
     parser.add_argument('--config', type=str, default='set_1.yaml', help='')
-    parser.add_argument('--seed', type=int, default=3693, help='')
-    parser.add_argument('--timesteps', type=int, default=500, help='')
-    parser.add_argument('--ckpt', type=str, default="model.pth", help='')
+    parser.add_argument('--timesteps', type=int, default=300, help='')
+    parser.add_argument('--ckpt', type=str, default="sssd_2.pth", help='')
+    parser.add_argument('--save_info', type=str, default='', help='')
     args = parser.parse_args()
 
     path = "configs/" + args.config
@@ -24,8 +24,8 @@ def get_args_and_config():
     new_config.device = device
 
     # no need seed
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
+    # torch.manual_seed(args.seed)
+    # np.random.seed(args.seed)
 
     # torch.backends.cudnn.benchmark=True
 
@@ -50,6 +50,7 @@ if __name__ == "__main__":
     
     try:
         ckpt = os.path.join(config.hijack.model_path, args.ckpt)
+        print(ckpt)
         model.load_state_dict(torch.load(ckpt))
         print("::: model loaded :::")
     except:

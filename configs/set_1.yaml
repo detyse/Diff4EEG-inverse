@@ -2,6 +2,12 @@ model:
     # 可将scheduler和sampler放入config
     # type:
 
+diffwave:
+    embed_dim: 128
+    residual_layers: 12
+    residual_channels: 32
+    dilation_cycle_length: 8
+
 net:
     in_chn: 3
     num_tokens: 32
@@ -20,7 +26,7 @@ s4:
 
 
 train:
-    lr: 0.000001
+    lr: 0.00001
     batch_size: 50
     epoch: 100
     save_path: 'checkpoints'    # relative path
@@ -30,14 +36,14 @@ sample:
     model_path: 'checkpoints'
     result_path: 'result/generate'
     # batch_size: 10  # 10 is good
-    data_shape: !!python/tuple [10, 3, 512]
+    data_shape: !!python/tuple [64, 3, 512]
 
 
 hijack:
     model_path: 'checkpoints'
     result_path: 'result/hijack'
     # batch_size: 10  # 10 is good
-    data_shape: !!python/tuple [10, 3, 512]
+    data_shape: !!python/tuple [64, 3, 512]
     _lambda: 0.5 # as default
 
 optim:

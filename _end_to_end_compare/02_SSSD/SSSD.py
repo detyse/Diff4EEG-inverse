@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from models.s4 import S4, S4D
+from s4 import S4, S4D
 import math
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
@@ -15,25 +15,10 @@ class Residual(nn.Module):
     def forward(self, x):
         return self.fn(x) + x
 
-class GaussianFourierProjection(nn.Module):
-    def __init__(self, embed_dim, scale=30.):
-        super().__init__()
-        self.W = nn.Parameter(torch.randn(embed_dim // 2) * scale, requires_grad=False)
-
-    def forward(self, x):   # x is the time
-        x_porj = x[:, None] * self.W[None, :] * 2 * np.pi
-        return torch.cat([torch.sin(x_porj), torch.cos(x_porj)], dim = -1)
-
 
 class ResidualBlock(nn.Module):
-
-    def __init__(self, num_tokens, embedding_dim, **kwargs):
+    def __init__(self, num_tokens, **kwargs):
         super().__init__()
-    
-        self.diffusion_projection = nn.Sequential(
-            nn.Linear(embedding_dim, num_tokens),
-            Rearrange('b c -> b c 1')
-        )
         
         self.input_projection = nn.Conv1d(num_tokens, 2 * num_tokens, 1)
         self.output_projection = nn.Conv1d(num_tokens, 2 * num_tokens, 1)
@@ -51,12 +36,11 @@ class ResidualBlock(nn.Module):
             Rearrange('b l c -> b c l'),
         )
 
-    def forward(self, x, diffusion_emb):
+    def forward(self, x):
         # x(B, C, L)
         # diffusion_emb(B, embedding_dim)
 
-        diffusion_emb = self.diffusion_projection(diffusion_emb) # (B, C, 1)
-        y = x + diffusion_emb
+        y = x
         y = self.input_projection(y) # (B, 2C, L)
         y, _ = self.S4_1(y) # (B, 2C, L)
         y = self.ln1(y)
@@ -77,51 +61,55 @@ class SSSD(nn.Module):
     '''
     # def __init__(self, nscheduler, in_chn, num_tokens, depth, dropout=0, embedding_dim=128, transposed=False, **kwargs):
 
-    def __init__(self, nscheduler, config, **kwargs) -> None:
+    def __init__(self, params, **kwargs) -> None:
         super().__init__()
-        self.config = config
-        self.nscheduler = nscheduler
-        in_chn = config.net.in_chn
-        num_tokens = config.net.num_tokens
-        depth = config.net.depth
-        # dropout = config.dropout
-        embedding_dim = config.net.embedding_dim
-
-        self.diffusion_embedding = nn.Sequential(
-            GaussianFourierProjection(embed_dim=embedding_dim),
-            nn.Linear(embedding_dim, embedding_dim),
-            nn.SiLU(),
-            nn.Linear(embedding_dim, embedding_dim),
-            nn.SiLU()
-        )
+        self.params = params
+        in_chn = params.in_chn
+        num_tokens = params.num_tokens
+        depth = params.depth
+        # dropout = params.dropout
 
         self.input_projection = nn.Conv1d(in_chn, num_tokens, 1)
         self.output_projection1 = nn.Conv1d(num_tokens, num_tokens, 1)
-        self.output_projection2 = nn.Conv1d(num_tokens, in_chn, 1)
+        self.output_projection2 = nn.Conv1d(num_tokens, 3, 1)
 
         self.residual_layers = nn.ModuleList(
             [
-                ResidualBlock(num_tokens, embedding_dim, **kwargs)
+                ResidualBlock(num_tokens, **kwargs)
                 for _ in range(depth)
             ]
         )
 
-        self.nscheduler = nscheduler
-
-    def forward(self, x, t):
+    def forward(self, x):
         # x(B, L, K) -> (transposed == False), (B, K, L) -> (transposed == True)
         # t(B, 1, 1)
-        diffusion_emb = self.diffusion_embedding(t.view(-1)) # (B, embedding_dim)
         x = self.input_projection(x) # (B, C, L)
 
         sum_skip = torch.zeros_like(x)
         for layer in self.residual_layers:
-            x, skip = layer(x, diffusion_emb) # (B, C, L)
+            x, skip = layer(x) # (B, C, L)
             sum_skip = sum_skip + skip
         
         x = sum_skip / math.sqrt(len(self.residual_layers))
         x = F.relu(self.output_projection1(x))
         x = self.output_projection2(x) 
-
-        x = x / torch.sqrt(self.nscheduler.BETA(t)) # ?
+        
         return x
+    
+
+def loss_fn(output, truth):
+    loss = F.smooth_l1_loss(output, truth)
+    return loss
+
+def eval_error(output, truth):
+    sum_err = np.sum((output-truth) ** 2, axis=(1,2))
+    mean_err = np.mean(sum_err)
+    return mean_err, sum_err
+
+def align(data):
+    if isinstance(data, torch.Tensor):
+        return data.to(torch.float32)
+    elif isinstance(data, np.ndarray):
+        data = torch.from_numpy(data)
+        return data.to(torch.float32)
+    else: raise

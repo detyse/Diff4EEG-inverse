@@ -12,25 +12,24 @@ from torch.utils.data import Dataset, DataLoader
 from datasets.datasets import perturbed_dataset, separated_dataset, hijack_dataset
 
 def parse_args_and_config(**parser_kwargs):
-    parser = argparse.ArgumentParser(description='ddd')
+    parser = argparse.ArgumentParser(description='')
     parser.add_argument('--config', type=str, default="set_1.yaml") #, required=True
-    parser.add_argument('--seed', type=int, default=9574, help='Random seed')
     parser.add_argument('--timesteps', type=int, default=500, help='Sample time steps')
-    parser.add_argument('--model_save', type=str, default="model.pth", help='Save model name')
-    parser.add_argument('--ckpt', type=str, default="model.pth", help='Load model name')
+    parser.add_argument('--model_save', type=str, default="sssd_2aaaa.pth", help='Save model name')
+    parser.add_argument('--ckpt', type=str, default="sssd_2.pth", help='Load model name')
     args = parser.parse_args()
 
     path = "configs/" + args.config
     with open(path, "r") as f:
-        config = yaml.safe_load(f)
+        config = yaml.unsafe_load(f)
     new_config = dict2namespace(config)
     
     device = torch.device('cuda:3')
     new_config.device = device
 
     # no need seed
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
+    # torch.manual_seed(args.seed)
+    # np.random.seed(args.seed)
 
     # torch.backends.cudnn.benchmark=True
 
@@ -52,16 +51,16 @@ if __name__ == "__main__":
     device = torch.device("cuda:3")
     model = BSSmodel(args, config)
     ckpt = os.path.join(config.hijack.model_path, args.ckpt)
-    print(ckpt)
 
     try:
         ckpt = os.path.join(config.hijack.model_path, args.ckpt)
         print(ckpt)
         model.load_state_dict(torch.load(ckpt))
-        print("model loaded")
+        print("::: model loaded :::")
     except:
-        print("ckpt does not exist")
+        print("::: ckpt does not exist :::")
 
+    model.train()
     dataloader = DataLoader(separated_dataset(), batch_size=config.train.batch_size, shuffle=True)
     train(
         model=model,

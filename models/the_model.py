@@ -64,6 +64,7 @@ class BSSmodel(nn.Module):
         init_x = torch.randn(
             data_shape, device=self.device) * np.sqrt(
                 self.scheduler.BETA(init_point))
+
         # from random with variation 1
         trajectory = torch.linspace(init_point, eps, self.time_steps+1, device=self.device)
         K = trajectory.shape[0] # 

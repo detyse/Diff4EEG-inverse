@@ -14,7 +14,6 @@ from utils.utils import random_select
 def parse_args_and_config(**parser_kwargs):
     parser = argparse.ArgumentParser(description='ddd')
     parser.add_argument('--config', type=str, default="set_1.yaml") #, required=True
-    parser.add_argument('--seed', type=int, default=1234, help='Random seed')
     parser.add_argument('--timesteps', type=int, default=500, help='Sample time steps')
     parser.add_argument('--ckpt', type=str, default='model.pth', help="ckpt to load model")
     parser.add_argument('--batch_size', type=int, default=32, help='')
@@ -29,8 +28,8 @@ def parse_args_and_config(**parser_kwargs):
     new_config.device = device
 
     # no need seed
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
+    # torch.manual_seed(args.seed)
+    # np.random.seed(args.seed)
 
     # torch.backends.cudnn.benchmark=True
 

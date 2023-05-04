@@ -48,7 +48,7 @@ def sample(model,
     result = model.sample(data_shape)
     result = result.cpu().numpy()
     save_path = config.sample.result_path
-    info = 'sample' + 'datalength:' + str(config.sample.data_shape[0])
+    info = 'sample' + 'datalength:' + str(config.sample.data_shape[0]) + args.save_info
     save_in_time(result, save_path, info)
     return 0
 
