@@ -25,10 +25,10 @@ params = AttrDict(
     num_tokens = 32,
     depth = 24,
 
-    mode = 'nplr',
-    measure = 'legs',
+    mode = 'diag',
+    measure = 'diag-lin',
     bidirectional = True,
-    transpose = True,
+    transpose = False,
 
     device = torch.device('cuda:2'),
 )

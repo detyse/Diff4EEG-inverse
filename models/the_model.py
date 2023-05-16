@@ -10,7 +10,7 @@ import random
 from utils.utils import type_align
 
 from models.SSSD import SSSD
-
+from models.DiffWave import DiffWave
 
 class BSSmodel(nn.Module):
     # use score function
@@ -22,10 +22,11 @@ class BSSmodel(nn.Module):
         self.device = config.device
         # setup 非参化
         self.scheduler = Score_sch()   # setup 实例
-        self.score_net = SSSD(nscheduler=self.scheduler, 
-                              config=self.config, 
-                              mode=config.s4.mode, 
-                              measure=config.s4.measure).to(self.device)
+        # self.score_net = SSSD(nscheduler=self.scheduler, 
+        #                       config=self.config, 
+        #                       mode=config.s4.mode, 
+        #                       measure=config.s4.measure).to(self.device)
+        self.score_net = DiffWave(nscheduler=self.scheduler, config=self.config).to(self.device)
         self.sampler = VDM_sampler(scheduler=self.scheduler)
         self.time_steps = args.timesteps    # 把timesteps设为args方便修改
         # actually K steps, short sample

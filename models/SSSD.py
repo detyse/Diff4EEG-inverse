@@ -37,7 +37,7 @@ class ResidualBlock(nn.Module):
         
         self.input_projection = nn.Conv1d(num_tokens, 2 * num_tokens, 1)
         self.output_projection = nn.Conv1d(num_tokens, 2 * num_tokens, 1)
-
+        
         self.S4_1 = S4(2 * num_tokens, **kwargs)
         self.ln1 = nn.Sequential(
             Rearrange('b c l -> b l c'),

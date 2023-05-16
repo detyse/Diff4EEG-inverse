@@ -15,8 +15,8 @@ def parse_args_and_config(**parser_kwargs):
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--config', type=str, default="set_1.yaml") #, required=True
     parser.add_argument('--timesteps', type=int, default=500, help='Sample time steps')
-    parser.add_argument('--model_save', type=str, default="sssd_2aaaa.pth", help='Save model name')
-    parser.add_argument('--ckpt', type=str, default="sssd_2.pth", help='Load model name')
+    parser.add_argument('--model_save', type=str, default="diffwave_4.pth", help='Save model name')
+    parser.add_argument('--ckpt', type=str, default="diffwave_4.pth", help='Load model name')
     args = parser.parse_args()
 
     path = "configs/" + args.config
@@ -24,7 +24,7 @@ def parse_args_and_config(**parser_kwargs):
         config = yaml.unsafe_load(f)
     new_config = dict2namespace(config)
     
-    device = torch.device('cuda:3')
+    device = torch.device('cuda:2')
     new_config.device = device
 
     # no need seed

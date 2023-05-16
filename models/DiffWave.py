@@ -24,34 +24,29 @@ class GaussianFourierProjection(nn.Module):
         x_porj = x[:, None] * self.W[None, :] * 2 * np.pi
         return torch.cat([torch.sin(x_porj), torch.cos(x_porj)], dim = -1)
 
-class Dense(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super().__init__()
-        self.dense = nn.Linear(input_dim, output_dim)
-    def forward(self, x):
-        return self.dense(x)[..., None]
 
 class ResidualBlock(nn.Module):
     def __init__(self, residual_channels, dilation):
         super().__init__()
         self.dilated_conv = Conv1d(
             residual_channels, 2 * residual_channels, 3,
-            padding = dilation, dilation = dilation )
-        self.embed_projection = Dense(residual_channels * 3, residual_channels)
+            padding = dilation, dilation = dilation)
+        self.norm = nn.BatchNorm1d(2 * residual_channels)
+        self.embed_projection = nn.Linear(residual_channels * 3, residual_channels)
         self.output_projection = Conv1d(residual_channels, 2 * residual_channels, 1)
 
     def forward(self, x, t):
-        embedding = self.embed_projection(t)
+        embedding = self.embed_projection(t)[..., None]
         y = x + embedding
         y = self.dilated_conv(y)
-        
+        # 加一个norm层
+        y = self.norm(y)
         gate, filter = torch.chunk(y, 2, dim=1)
         y = torch.sigmoid(gate) * torch.tanh(filter)
 
         y = self.output_projection(y)
         residual, skip = torch.chunk(y, 2, dim=1)
         return (x + residual) / sqrt(2.0), skip
-
 
 class DiffWave(nn.Module):
     '''
@@ -61,13 +56,14 @@ class DiffWave(nn.Module):
         super().__init__()
         self.config = config
         self.nscheduler = nscheduler
-        self.input_projection = Conv1d(1, config.diffwave.residual_channels, 1)
+        self.input_projection = Conv1d(3, config.diffwave.residual_channels, 1)
         # 这里
         self.embedding = nn.Sequential(
             GaussianFourierProjection(embed_dim=config.diffwave.embed_dim),
             nn.Linear(config.diffwave.embed_dim, config.diffwave.embed_dim)
         )
         self.embedding_layer = nn.Linear(config.diffwave.embed_dim, config.diffwave.residual_channels * 3)
+        
         self.residual_layers = nn.ModuleList([
             ResidualBlock(config.diffwave.residual_channels, 
             2**(i % config.diffwave.dilation_cycle_length))
@@ -82,11 +78,12 @@ class DiffWave(nn.Module):
         # x = x.unsqueeze(1)  # [32, 1, 512]
         x = self.input_projection(x)
         x = F.relu(x)
-        embed = self.embedding(t)
+
+        embed = self.embedding(t.view(-1))
         embed = silu(embed)
         embed = self.embedding_layer(embed)
+
         skip = None
-        
         for layer in self.residual_layers:
             x, skip_connection = layer(x, embed)
             skip = skip_connection if skip is None else skip_connection + skip

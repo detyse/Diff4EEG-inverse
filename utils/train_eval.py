@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from torch.optim import AdamW
+from torch.optim import AdamW, Adam
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ def train(
     train_loader,
 ):
   
-    optimizer = AdamW(model.parameters(), lr=config.train.lr, weight_decay=1e-6, eps=1e-5)
+    optimizer = Adam(model.parameters(), lr=config.train.lr)
     
     foldername = config.train.save_path
     output_path = os.path.join(foldername, args.model_save)

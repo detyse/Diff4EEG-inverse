@@ -3,8 +3,8 @@ model:
     # type:
 
 diffwave:
-    embed_dim: 128
-    residual_layers: 12
+    embed_dim: 256
+    residual_layers: 24
     residual_channels: 32
     dilation_cycle_length: 8
 
@@ -26,9 +26,9 @@ s4:
 
 
 train:
-    lr: 0.00001
+    lr: 0.0001
     batch_size: 50
-    epoch: 100
+    epoch: 88
     save_path: 'checkpoints'    # relative path
 
 

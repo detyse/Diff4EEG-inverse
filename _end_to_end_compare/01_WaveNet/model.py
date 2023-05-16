@@ -35,7 +35,7 @@ class ResidualBlock(nn.Module):
         return (x + residual) / sqrt(2.0), skip
 
 
-class WaveNet(nn.Module):
+class WaveNet(nn.Module): 
     def __init__(self, params) -> None:
         super().__init__()
         self.params = params

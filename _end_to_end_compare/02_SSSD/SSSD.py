@@ -84,7 +84,7 @@ class SSSD(nn.Module):
         # x(B, L, K) -> (transposed == False), (B, K, L) -> (transposed == True)
         # t(B, 1, 1)
         x = self.input_projection(x) # (B, C, L)
-
+        
         sum_skip = torch.zeros_like(x)
         for layer in self.residual_layers:
             x, skip = layer(x) # (B, C, L)
@@ -95,16 +95,18 @@ class SSSD(nn.Module):
         x = self.output_projection2(x) 
         
         return x
-    
+
 
 def loss_fn(output, truth):
     loss = F.smooth_l1_loss(output, truth)
     return loss
 
+
 def eval_error(output, truth):
     sum_err = np.sum((output-truth) ** 2, axis=(1,2))
     mean_err = np.mean(sum_err)
     return mean_err, sum_err
+
 
 def align(data):
     if isinstance(data, torch.Tensor):
@@ -113,3 +115,4 @@ def align(data):
         data = torch.from_numpy(data)
         return data.to(torch.float32)
     else: raise
+    
