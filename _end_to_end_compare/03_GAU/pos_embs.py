@@ -58,7 +58,7 @@ class RoPE(nn.Module):
         
         self.register_buffer('freqs_cis', freqs_cis)
 
-    def reshape_for_broadcast(freqs_cis, x):
+    def reshape_for_broadcast(self, freqs_cis, x):
         freqs_cis = freqs_cis[:x.shape[1], :]
         ndim = x.ndim
         assert 0 <= 1 < ndim
@@ -68,8 +68,9 @@ class RoPE(nn.Module):
         return freqs_cis.view(*shape)
     
     def forward(self, x):
-        x_ = torch.view_as_complex(x.float().reshape(*x.shape[:-1], 2))
-        freqs_cis = self.reshape_for_broadcast(freqs_cis, x_)
+        x_ = torch.view_as_complex(x.float().reshape(*x.shape[:-1], -1, 2))
+        # print(type(self.freqs_cis))
+        freqs_cis = self.reshape_for_broadcast(self.freqs_cis, x_)
         x_out = torch.view_as_real(x_ * freqs_cis).flatten(2)
         return x_out.type_as(x)
     

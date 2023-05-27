@@ -10,7 +10,7 @@ import random
 from utils.utils import type_align
 
 from models.SSSD import SSSD
-from models.DiffWave import DiffWave
+from models.DiffWave import DiffWave    #, DW4BSS
 
 class BSSmodel(nn.Module):
     # use score function
@@ -31,40 +31,37 @@ class BSSmodel(nn.Module):
         self.time_steps = args.timesteps    # 把timesteps设为args方便修改
         # actually K steps, short sample
 
-    def cal_loss(self, data, eps = 1e-5):
+    def cal_loss(self, data, eps=1e-5):
           # may no need
         # input perturbed data have 1 channel
         data = type_align(data).to(self.device)
         B, C, L = data.shape
         # Batch size, Channel, Length
 
-        random_t = torch.rand(B, device=self.device)
+        random_t = torch.rand(B, device=self.device) * (1.-eps) + eps
         # each batch use different t
         random_t = random_t[:, None, None]
         noise = torch.randn_like(data)
         # shape like data
-        std = torch.sqrt(self.scheduler.BETA(random_t))
+        std = torch.sqrt(self.scheduler.BETA(random_t)+1e-8)
         # standard deviation
 
         perturbed_x = self.scheduler.disturb(data, random_t, noise)
         
         score = self.score_net(perturbed_x, random_t)
         loss = torch.mean(
-            torch.sum((score * std + noise) + eps, dim=(1, 2))**2)
+            torch.sum((score * std + noise), dim=(1, 2))**2)
 
         return loss
 
 
-    def sample(self, data_shape, eps = 1e-5):
-          # replace 0
-
+    def sample(self, data_shape, eps = 1e-3):
+        # replace 0
         init_point = 1  
 
         self.score_net.eval()
 
-        init_x = torch.randn(
-            data_shape, device=self.device) * np.sqrt(
-                self.scheduler.BETA(init_point))
+        init_x = torch.randn(data_shape, device=self.device) * np.sqrt(self.scheduler.BETA(init_point))
 
         # from random with variation 1
         trajectory = torch.linspace(init_point, eps, self.time_steps+1, device=self.device)
@@ -83,7 +80,7 @@ class BSSmodel(nn.Module):
         return mean_x # , traces
     
 
-    def hijack_sample(self, perturbed_data, _lambda, eps = 1e-5):
+    def hijack_sample(self, perturbed_data, _lambda, eps = 1e-6):
         
         init_point = 1
         
@@ -97,7 +94,7 @@ class BSSmodel(nn.Module):
 
         init_x = torch.randn(
             data_shape, device=self.device) * np.sqrt(
-                self.scheduler.BETA(init_point))
+                self.scheduler.BETA(init_point) + 1e-8)
         # from random with variation 1
         trajectory = torch.linspace(init_point, eps, self.time_steps+1, device=self.device)
         K = trajectory.shape[0] # 
@@ -133,7 +130,7 @@ class Score_sch():
     alpha and beta come from:   maybe
     ref: Maximum Likelihood Training of Score-Based Diffusion Models
     '''
-    def __init__(self, beta_min=0.1, beta_max=20) -> None:
+    def __init__(self, beta_min=0.1, beta_max=20):
         self.beta_min = beta_min
         self.beta_max = beta_max
 
@@ -143,6 +140,12 @@ class Score_sch():
             return torch.exp(-(self.beta_max - self.beta_min) * t**2 / 2 - t * self.beta_min)
         else:
             return np.exp(-(self.beta_max - self.beta_min) * t**2 / 2 - t * self.beta_min)
+
+    def ALPHA_cos(self, t):
+        s = 1
+        ft = np.cos((t/1+s)/(1+s)*(np.pi/2))**2
+        f0 = 1
+        return ft 
 
     def BETA(self, t):
         # _beta_t
@@ -162,13 +165,14 @@ class Score_sch():
     
     def disturb(self, x, t, z=None):
         # z = None ? 
-        # z could be Other noise that is not Gaussian
+        # z = noise? 
+        eps = 1e-8
         if isinstance(t, torch.Tensor):
-            scale = self.ALPHA(t).sqrt()
-            sigma = self.BETA(t).sqrt()
+            scale = (self.ALPHA(t)+eps).sqrt()
+            sigma = (self.BETA(t)+eps).sqrt()
         else:
-            scale = np.sqrt(self.ALPHA(t))
-            sigma = np.sqrt(self.BETA(t))
+            scale = np.sqrt(self.ALPHA(t) + eps)
+            sigma = np.sqrt(self.BETA(t) + eps)
         xt = scale * x
         z = torch.randn_like(x) if z == None else z
         xt += sigma * z
@@ -177,9 +181,23 @@ class Score_sch():
 '''
 try other schedulers
 '''
+class CosSch():
+    def __init__(self) -> None:
+        self.a = 1
+
+    def ALPHA(self, ):
+
+        return     
+    
+    def BETA(self, t):
+
+        return 
+
+
 
 # sampler
 # the backward 
+# 1 >= t > s >= 0
 # p(x_t-1|x_t) => x_t-1 = MU(x_t) + SIGMA * epsilon
 class VDM_sampler():
     def __init__(self, scheduler) -> None:
@@ -195,9 +213,10 @@ class VDM_sampler():
 
     def MU(self, score_net, x, t, s):
         dividend = self.ALPHA_ts(t, s)
-        factor = 1 / torch.sqrt(dividend) if isinstance(dividend, torch.Tensor) else 1 / np.sqrt(dividend)
+        factor = 1 / torch.sqrt(dividend + 1e-8) if isinstance(dividend, torch.Tensor) else 1 / np.sqrt(dividend + 1e-8)
         grad = self.BETA_ts(t, s) * score_net(x, t)
-        return factor * (x + grad)
+        mu = factor * (x + grad)
+        return mu
 
     def SIGMA(self, t, s):
         # t > s

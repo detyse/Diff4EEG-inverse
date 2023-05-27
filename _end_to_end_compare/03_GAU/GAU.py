@@ -3,10 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from pos_embs import RoPE
+from einops.layers.torch import Rearrange
+import math
 
-class GAUBlock():
+class GAUBlock(nn.Module):
     def __init__(self, dim, hidden_dim=16, query_key_dim=64):
         super().__init__()
+        self.transpose = Rearrange('b c l -> b l c')
 
         self.norm = nn.LayerNorm(dim)
         # self.dropout = nn.Dropout(dropout)
@@ -31,17 +34,22 @@ class GAUBlock():
             nn.Linear(hidden_dim, dim),
         )
 
-    def forward(self, x):
-        seq_len = x.shape[-2]
+        self.output_projection = nn.Conv1d(dim, dim*2, 1)
 
-        normed_x = self.norm(x)
+    def forward(self, x):
+        x_transpose = self.transpose(x)
+
+        seq_len = x_transpose.shape[-2]
+
+        normed_x = self.norm(x_transpose)
         v, u = self.to_hidden(normed_x).chunk(2, dim=-1)
 
         Z = self.to_qk(normed_x)
 
         QK = torch.einsum('... d, h d -> ... h d', Z, self.gamma) + self.beta
-        QK = self.pos_emb(QK)
         q, k = QK.unbind(dim=-2)
+        q = self.pos_emb(q)
+        k = self.pos_emb(k)
 
         sim = torch.einsum('b i d, b j d -> b i j', q, k) / seq_len
 
@@ -52,13 +60,17 @@ class GAUBlock():
         O = u * V   # 表示哈达玛积
 
         out = self.to_out(O)
-        return out
+        out = self.transpose(out)
+        out = self.output_projection(out)
+
+        residual, skip = torch.chunk(out, 2, dim=1)
+        return (x + residual) / math.sqrt(2.0), skip
 
 
 class GAUNet(nn.Module):
     def __init__(self, params) -> None:
         super().__init__()
-        self.input_projection = nn.Conv1d(3, params.dim, 1)
+        self.input_projection = nn.Conv1d(1, params.dim, 1)
         self.residual_layers = nn.ModuleList([
             GAUBlock(dim=params.dim, hidden_dim=params.hidden_dim, query_key_dim=params.query_key_dim)
             for i in range(params.residual_layers)
@@ -74,7 +86,7 @@ class GAUNet(nn.Module):
             x, skip_connection = layer(x)
             skip = skip_connection if skip is None else skip_connection + skip
 
-        x = skip / torch.sqrt(len(self.residual_layers))
+        x = skip / math.sqrt(len(self.residual_layers))
         x = self.skip_projection(x)
         x = F.relu(x)
         x = self.output_projection(x)

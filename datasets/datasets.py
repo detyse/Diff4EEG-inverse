@@ -10,7 +10,7 @@ class perturbed_dataset(Dataset):
     
     def __len__(self):
         len = self.data.shape[0]
-        return len 
+        return len
 
     def __getitem__(self, index):
         get_trials = self.data[index]

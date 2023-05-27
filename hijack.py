@@ -46,7 +46,6 @@ def dict2namespace(config):
     return namespace
 
 
-
 if __name__ == '__main__':
     args, config = parse_args_and_config()
     dataset = hijack_dataset()

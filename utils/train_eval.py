@@ -16,16 +16,18 @@ def train(
     train_loader,
 ):
   
-    optimizer = Adam(model.parameters(), lr=config.train.lr)
+    optimizer = Adam(model.parameters(), lr=config.train.lr, weight_decay=1e-6)
     
     foldername = config.train.save_path
     output_path = os.path.join(foldername, args.model_save)
     tqdm_epoch = tqdm(range(config.train.epoch))
+    losses = []
     for epoch_no in tqdm_epoch:
         avg_loss = 0.
         num_items = 0
-        for x in train_loader:  # why start = 1
+        for _, x in train_loader:  # why start = 1
             x = x.squeeze(1)
+            # print(x.shape)
             optimizer.zero_grad()
             loss = model(x)
             loss.backward()
@@ -33,17 +35,22 @@ def train(
             
             avg_loss += loss.item() * x.shape[0]
             num_items += x.shape[0]
+        
+        if np.isnan(loss.item()):
+            info = 'get nan'
+            break
         tqdm_epoch.set_description('Average Loss: {:5f}'.format(avg_loss / num_items))
         torch.save(model.state_dict(), output_path)
+        
+        losses.append(avg_loss / num_items)
 
+    save_in_time(losses, '/home/wyl/projects/_BSS_hijack/result/loss', args.loss_info)
     return 0
 
 
 def sample(model,
            args,
            config,):
-    ckpt = os.path.join(config.sample.model_path, args.ckpt)
-    model.load_state_dict(torch.load(ckpt))
     data_shape = config.sample.data_shape
     result = model.sample(data_shape)
     result = result.cpu().numpy()

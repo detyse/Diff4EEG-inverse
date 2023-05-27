@@ -10,8 +10,8 @@ from utils.train_eval import sample
 def get_args_and_config():
     parser = argparse.ArgumentParser(description='Sample EEG')
     parser.add_argument('--config', type=str, default='set_1.yaml', help='')
-    parser.add_argument('--timesteps', type=int, default=300, help='')
-    parser.add_argument('--ckpt', type=str, default="diffwave_4.pth", help='')
+    parser.add_argument('--timesteps', type=int, default=1000, help='')
+    parser.add_argument('--ckpt', type=str, default="diffwave_12.pth", help='')
     parser.add_argument('--save_info', type=str, default='', help='')
     args = parser.parse_args()
 

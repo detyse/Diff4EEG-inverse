@@ -23,11 +23,11 @@ params = AttrDict(
     batch_size=64,
     learning_rate=1e-4,
 
-    residual_layers=5,
+    residual_layers=12,
 
     dim = 8,
     hidden_dim = 16,
-    query_key_dim=64,
+    query_key_dim=128,
 
     device = torch.device('cuda:2'),
 )

@@ -10,13 +10,15 @@ from models.the_model import BSSmodel
 from torch.optim import AdamW
 from torch.utils.data import Dataset, DataLoader
 from datasets.datasets import perturbed_dataset, separated_dataset, hijack_dataset
+from datasets.datasets_bss import train_dataset, test_dataset
 
 def parse_args_and_config(**parser_kwargs):
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--config', type=str, default="set_1.yaml") #, required=True
-    parser.add_argument('--timesteps', type=int, default=500, help='Sample time steps')
-    parser.add_argument('--model_save', type=str, default="diffwave_4.pth", help='Save model name')
-    parser.add_argument('--ckpt', type=str, default="diffwave_4.pth", help='Load model name')
+    parser.add_argument('--timesteps', type=int, default=1000, help='Sample time steps')
+    parser.add_argument('--model_save', type=str, default="diffwave_12.pth", help='Save model name')
+    parser.add_argument('--ckpt', type=str, default="diffwave_12.pth", help='Load model name')
+    parser.add_argument('--loss_info', type=str, default='diffwave_12', help='')
     args = parser.parse_args()
 
     path = "configs/" + args.config
@@ -61,7 +63,7 @@ if __name__ == "__main__":
         print("::: ckpt does not exist :::")
 
     model.train()
-    dataloader = DataLoader(separated_dataset(), batch_size=config.train.batch_size, shuffle=True)
+    dataloader = DataLoader(train_dataset(), batch_size=config.train.batch_size, shuffle=True)
     train(
         model=model,
         args=args,

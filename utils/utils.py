@@ -13,6 +13,16 @@ def ICA(data):  # data shape [1, 1, length]
     ica = FastICA(n_components=components)
     return ica  # []
 
+def ICA_(data):
+    components = 3
+    data = np.array(data)
+    ica = FastICA(n_components=components)
+    result = None
+    for lines in data:
+        ica_fit = ica.fit(lines)[None, ...]
+        result = ica_fit if result is None else result.append(ica_fit, axis=0)
+    return result  # []
+
 def type_align(data):
     # align the data type to torch tensor
     if isinstance(data, torch.Tensor):
